@@ -9,12 +9,14 @@ use App\Domain\Identity\Models\UserDevice;
 use App\Domain\Identity\Notifications\OneTimeCodeNotification;
 use App\Domain\Identity\Notifications\SecurityAlertNotification;
 use App\Domain\Identity\Services\DeviceRecognizer;
+use App\Support\Captcha\CaptchaVerifier;
 use Database\Factories\UserFactory;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Testing\TestResponse;
 
 beforeEach(fn () => Notification::fake());
 
-function loginAs(User $user, string $password = UserFactory::PASSWORD): \Illuminate\Testing\TestResponse
+function loginAs(User $user, string $password = UserFactory::PASSWORD): TestResponse
 {
     return test()->post('/login', ['email' => $user->email, 'password' => $password]);
 }
@@ -82,7 +84,7 @@ it('throttles after 5 attempts a minute for the same email and IP', function ():
 
 it('asks for a CAPTCHA after 3 failures from one IP when Turnstile is configured', function (): void {
     config(['services.turnstile.secret' => 'secret', 'services.turnstile.site_key' => 'site']);
-    app()->forgetInstance(\App\Support\Captcha\CaptchaVerifier::class);
+    app()->forgetInstance(CaptchaVerifier::class);
     $user = User::factory()->create();
 
     for ($i = 0; $i < 3; $i++) {
@@ -96,8 +98,12 @@ it('asks for a CAPTCHA after 3 failures from one IP when Turnstile is configured
 it('requires an emailed code on a new device and alerts the user', function (): void {
     $user = User::factory()->withoutTwoFactor()->create();
 
-    loginAs($user);
+    $device = loginAs($user)->getCookie(DeviceRecognizer::COOKIE)?->getValue();
+    expect($device)->toBeString();
     $this->assertAuthenticatedAs($user);
+
+    // Browsers send the device cookie back; test requests must do it explicitly.
+    $this->withCookie(DeviceRecognizer::COOKIE, (string) $device);
 
     $this->get('/dashboard')->assertRedirect('/device/verify');
     Notification::assertSentTo($user, SecurityAlertNotification::class, fn ($n) => $n->event === SecurityEvent::NewDeviceLogin);

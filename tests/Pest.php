@@ -27,7 +27,8 @@ pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
  */
 function signIn(?User $user = null): User
 {
-    $user ??= User::factory()->create();
+    // Reload so every column is present, as it is for a user resolved by a real login.
+    $user = ($user ?? User::factory()->create())->refresh();
 
     test()->actingAs($user)->withSession([DeviceRecognizer::SESSION_KEY => 1]);
 

@@ -5,6 +5,7 @@ All notable changes to TradeMax. Format: [Keep a Changelog](https://keepachangel
 ## [Unreleased]
 
 ### Added
+- Phase 1: registration with country gate, E.164 phones, strength and breach-checked passwords, consents; email → device → SMS → authenticator onboarding; device trust and new-device codes; login history and CAPTCHA after failures; Security centre (2FA reset and recovery codes, password, email and phone changes with step-up, anti-phishing code, API keys, sessions, devices); freeze from the security page or the email link; 24h withdrawal lock on security changes; append-only audit log; security headers with CSP nonce; staff roles and `admin:create`.
 - Signals planned as Phase 9b (ADR-0006); sidebar entry shown as "Soon".
 - MySQL (InnoDB enforced) and Memurai/predis wired for local development.
 - Phase 0 (partial): project rules (`CLAUDE.md`, `AGENTS.md`), agent skills under `.claude/skills/`, `PostToolUse`/`Stop` hooks (`.claude/settings.json`), and documentation skeleton under `docs/`.

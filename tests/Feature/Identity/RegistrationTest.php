@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Domain\Identity\Models\Consent;
 use App\Domain\Identity\Models\User;
 use App\Domain\Identity\Models\UserDevice;
-use App\Domain\Identity\Services\PhoneNumbers;
 use App\Support\Audit\AuditLog;
 use App\Support\Captcha\CaptchaVerifier;
 use Illuminate\Auth\Notifications\VerifyEmail;

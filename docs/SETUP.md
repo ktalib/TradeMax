@@ -29,6 +29,14 @@ composer setup   # composer install, npm ci, key:generate, migrate --seed
 composer dev     # serve + queue workers + reverb + vite + schedule:work
 ```
 
+## Local development notes
+
+- **SMS codes** are written to `storage/logs/laravel.log` (`SMS_DRIVER=log`), with the phone number masked.
+- **Emails** go to the log with the default `MAIL_MAILER=log`, or to Mailpit if you run it and set `MAIL_MAILER=smtp`.
+- **Queued notifications** (security alerts) need a worker: `composer dev` runs one.
+- **CAPTCHA** is off until `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET` are set.
+- **Staff account:** `php artisan admin:create you@example.com --name="Your Name"`.
+
 ## External providers
 
 Every integration is driver-based and swappable via env; each has a `Fake` driver used in tests and demo mode. See the master build prompt Section 6 for the driver contracts and Section 15 for the `.env.example` key list, plus `VIRUS_SCAN_DRIVER=defender|clamav|null` and `BROADCAST_CONNECTION=reverb|pusher`.

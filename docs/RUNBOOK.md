@@ -25,4 +25,19 @@ See master build prompt Section 9 for the full schedule table and queue names. A
 
 ## Audit log immutability
 
-The DB user for the app has **no UPDATE/DELETE grant** on `audit_logs`. Document and verify this in the deployment.
+The application's DB user must not be able to change history. After migrations, as a privileged user:
+
+```sql
+-- the app user keeps SELECT/INSERT on audit_logs, loses UPDATE/DELETE
+REVOKE UPDATE, DELETE ON trademax.audit_logs FROM 'trademax_app'@'%';
+```
+
+(MySQL grants are additive: grant the app user privileges per table rather than `ALL ON trademax.*`, or the revoke has no effect.) The `AuditLog` model also refuses updates and deletes.
+
+## Staff accounts
+
+Create staff with `php artisan admin:create someone@company.com --name="Full Name" --role=finance`. The password is asked for interactively. Roles: super_admin, admin, compliance, finance, support_lead, support_agent, read_only (`RolesAndPermissionsSeeder`).
+
+## Account freezes
+
+Users freeze their own account from the security page or the link in any security email. That revokes API keys, ends other sessions and stops withdrawals. Unfreezing is a staff action after an identity check (admin panel, Phase 10).

@@ -56,4 +56,12 @@ Each module lives in `app/Domain/<Module>/` with `{Models,Actions,Services,Repos
 
 ## Module sections
 
+### Identity (Phase 1)
+
+- **Flow:** register (country gate → E.164 phone → strength + breach-checked password → consents) → email link → new-device code (if needed) → SMS code → authenticator app → app. The `app` middleware group enforces it: `auth, verified, device.verified, phone.verified, two-factor.confirmed, account.active`.
+- **Auth:** Fortify controllers on our own routes (`routes/auth.php`); `AuthenticateUser` checks credentials, records failures and requires CAPTCHA after repeated failures. `RecordSuccessfulLogin` (on `Login`) records the sign-in, recognises the device and alerts on new devices/IPs.
+- **Sensitive changes** are single-purpose actions in `app/Domain/Identity/Actions`. Each verifies step-up codes itself (`StepUpVerifier`: TOTP + emailed OTP), then calls `SecurityEvents::record()`, which applies the 24h withdrawal lock where required, writes the audit row, alerts the user (and the previous contact) and dispatches `SecurityEventOccurred` for other modules.
+- **Codes:** `OtpService` issues 6-digit codes stored as HMACs, bound to purpose and destination, valid 10 minutes, 5 guesses, 3 issues per 10 minutes.
+- **Cross-module:** countries via `Compliance\Repositories\Contracts\CountryDirectory`; SMS via `Notifications\Contracts\SmsSender`; sessions via `Identity\Repositories\Contracts\SessionStore`.
+
 _(One section per module added as it is built — see `new-domain-module` skill step 10.)_

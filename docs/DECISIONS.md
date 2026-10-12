@@ -74,4 +74,22 @@
   - **Demo data is generated, not typed.** `DemoSignalSeeder` (APP_DEMO only) simulates ~90 days of candles and runs the real indicator and outcome engines over them, so demo track records come from the same code as production.
 - **Consequences:** a new `app/Domain/Signals` module, six tables, four scheduled commands and a `signals` queue. PLAN gains a Phase 9b section and a risk-register entry.
 
+## ADR-0007 — Phase 1 identity and security choices
+- **Status:** Accepted (2026-10-12)
+- **Context:** Building Phase 1 surfaced choices the master prompt leaves open or gets wrong.
+- **Decision:**
+  1. **Fortify without its routes.** `Fortify::ignoreRoutes()`; `routes/auth.php` exposes only login, register, password reset, email verification and the 2FA challenge. Fortify's 2FA *management* endpoints would let a user turn 2FA off without step-up or the 24h lock, so every security change goes through an Identity action that enforces both.
+  2. **Two-step verification is mandatory at onboarding**, not only before the first withdrawal, to satisfy AGENTS.md ("auth + verified + 2FA-confirmed"). Onboarding order: email → device → phone (SMS) → authenticator. Resetting the authenticator sends the user straight back to set up a new one.
+  3. **API secrets are stored encrypted, not hashed.** The master prompt asked for both "stored hashed" and HMAC-SHA256 request signing, but the server needs the secret to recompute signatures. The API key is looked up by its SHA-256 hash; the secret is encrypted with the app key and shown once.
+  4. **CSP keeps `'unsafe-eval'` for scripts and `'unsafe-inline'` for styles.** Alpine (bundled with Livewire 3) evaluates expressions at runtime, and components use inline style attributes. Scripts otherwise need the per-request nonce; frames, objects, base-uri and form targets are locked down.
+  5. **Device trust:** a random token in an encrypted, HTTP-only cookie (only its hash is stored). A new device, or an untrusted device on a new IP, needs an emailed code; "trust this device" skips it for 30 days. Every new device or IP triggers an alert.
+  6. **One audit mechanism.** A custom append-only `audit_logs` table (model refuses update/delete; DB grant in RUNBOOK). `spatie/laravel-activitylog` isn't installed; two audit trails would drift.
+  7. **The `countries` table starts in Phase 1** (registration needs the gate). It's seeded from libphonenumber's regions, named with ICU, so the country list and phone validation always agree. CU, IR, KP, SY start blocked.
+  8. **Interim SMS port.** `SmsSender` with `log` (local) and `fake` (tests) drivers. Phase 6 adds Twilio/Vonage failover behind the same interface.
+  9. **Auth pages are Blade forms on Fortify controllers**, not Livewire: simpler, work without JavaScript, and Fortify already validates and throttles them. The Security centre is Livewire. One-time secrets (API secret, recovery codes) are protected Livewire properties, so they never enter the page payload.
+  10. **Staff accounts are separate** (`admins` table, `admin` guard, spatie roles on that guard), created with `php artisan admin:create`. The admin UI arrives with Filament.
+  11. **Passkeys stay off** (`PASSKEYS_ENABLED=false`). Fortify 1.41 supports them and the table exists; they get switched on with a passkey UI.
+  12. **Turnstile is disabled when no keys are set** (local); production must set both keys. Login shows the CAPTCHA after 3 failures from an IP in 15 minutes.
+- **Consequences:** PLAN's Phase 1 "Livewire auth screens" are Blade + Fortify; `countries` moves from Phase 3 to Phase 1 (Phase 3 adds the KYC columns).
+
 <!-- Add new ADRs below. -->
