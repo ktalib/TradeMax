@@ -25,7 +25,5 @@ it('emphasises both ends of an address', function (): void {
 });
 
 it('switches to right-to-left for Arabic', function (): void {
-    app()->setLocale('ar');
-
-    $this->get('/dev/ui')->assertSee('dir="rtl"', false);
+    $this->withHeader('Accept-Language', 'ar')->get('/dev/ui')->assertSee('dir="rtl"', false);
 });

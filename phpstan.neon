@@ -11,8 +11,9 @@ parameters:
         - routes
     tmpDir: storage/framework/cache/phpstan
     ignoreErrors:
-        # The trait has no user until the Identity models land in Phase 1. reportUnmatchedIgnoredErrors
-        # (on by default) makes this entry fail once a model uses the trait, so it can't linger.
+        # Fortify's TwoFactorAuthenticationFailed declares `@var \App\Models\User $user`, a class
+        # this app doesn't have (users live in App\Domain\Identity\Models). The listener narrows
+        # with instanceof, so the access is safe; the error is about Fortify's docblock.
         -
-            identifier: trait.unused
-            path: app/Support/Concerns/HasPublicUlid.php
+            identifier: class.notFound
+            path: app/Domain/Identity/Listeners/RecordFailedTwoFactor.php

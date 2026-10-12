@@ -23,13 +23,19 @@ return [
     'default_display_fiat' => env('DEFAULT_DISPLAY_FIAT', 'USD'),
 
     /*
+    | Starting status for the country seeder only: comprehensively sanctioned jurisdictions.
+    | After seeding, country statuses are managed in the admin panel.
+    */
+    'blocked_countries_default' => ['CU', 'IR', 'KP', 'SY'],
+
+    /*
     | KYC tiers (ADR-0001). Limits are USD equivalents in rolling windows.
     */
     'kyc_tiers' => [
-        0 => ['daily_withdraw_usd' => '0', 'monthly_withdraw_usd' => '0', 'daily_deposit_usd' => '0', 'can_trade' => false, 'can_stake' => false, 'can_copy_trade' => false, 'can_lead_trade' => false],
-        1 => ['daily_withdraw_usd' => '1000', 'monthly_withdraw_usd' => '10000', 'daily_deposit_usd' => '10000', 'can_trade' => true, 'can_stake' => true, 'can_copy_trade' => false, 'can_lead_trade' => false],
-        2 => ['daily_withdraw_usd' => '10000', 'monthly_withdraw_usd' => '100000', 'daily_deposit_usd' => '100000', 'can_trade' => true, 'can_stake' => true, 'can_copy_trade' => true, 'can_lead_trade' => false],
-        3 => ['daily_withdraw_usd' => '50000', 'monthly_withdraw_usd' => '500000', 'daily_deposit_usd' => '500000', 'can_trade' => true, 'can_stake' => true, 'can_copy_trade' => true, 'can_lead_trade' => true],
+        0 => ['daily_withdraw_usd' => '0', 'monthly_withdraw_usd' => '0', 'daily_deposit_usd' => '0', 'can_trade' => false, 'can_stake' => false, 'can_copy_trade' => false, 'can_lead_trade' => false, 'can_api_trade' => false],
+        1 => ['daily_withdraw_usd' => '1000', 'monthly_withdraw_usd' => '10000', 'daily_deposit_usd' => '10000', 'can_trade' => true, 'can_stake' => true, 'can_copy_trade' => false, 'can_lead_trade' => false, 'can_api_trade' => false],
+        2 => ['daily_withdraw_usd' => '10000', 'monthly_withdraw_usd' => '100000', 'daily_deposit_usd' => '100000', 'can_trade' => true, 'can_stake' => true, 'can_copy_trade' => true, 'can_lead_trade' => false, 'can_api_trade' => false],
+        3 => ['daily_withdraw_usd' => '50000', 'monthly_withdraw_usd' => '500000', 'daily_deposit_usd' => '500000', 'can_trade' => true, 'can_stake' => true, 'can_copy_trade' => true, 'can_lead_trade' => true, 'can_api_trade' => true],
     ],
 
     'withdrawals' => [
@@ -47,6 +53,22 @@ return [
         'trusted_device_days' => 30,
         'password_min_length' => 10,
         'password_min_zxcvbn_score' => 3,
+        'check_breached_passwords' => (bool) env('CHECK_BREACHED_PASSWORDS', true),
+        // CAPTCHA appears on the login form after this many failures from one IP in 15 minutes.
+        'captcha_after_failed_logins' => 3,
+        'max_api_keys' => 10,
+        // WebAuthn passkeys (Fortify) stay off until the passkey UI ships.
+        'passkeys_enabled' => (bool) env('PASSKEYS_ENABLED', false),
+    ],
+
+    /*
+    | Current versions of the legal documents users accept at registration. Bump a version
+    | when a document changes materially; users are asked to accept it again (Phase 10).
+    */
+    'legal' => [
+        'terms' => '2026-10-01',
+        'privacy' => '2026-10-01',
+        'risk_disclosure' => '2026-10-01',
     ],
 
     'travel_rule' => [

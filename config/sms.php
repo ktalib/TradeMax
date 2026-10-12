@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 return [
 
-    'driver' => env('SMS_DRIVER', 'fake'),
+    // log (local: codes go to storage/logs) | fake (tests) | failover (Phase 6)
+    'driver' => env('SMS_DRIVER', 'log'),
 
     'primary' => env('SMS_PRIMARY', 'twilio'),
 

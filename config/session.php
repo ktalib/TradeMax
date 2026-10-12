@@ -34,7 +34,7 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    'lifetime' => (int) env('SESSION_LIFETIME', env('IDLE_LOGOUT_MINUTES', 30)), // idle timeout: refreshed on every request
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

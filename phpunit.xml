@@ -32,5 +32,10 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="SMS_DRIVER" value="fake"/>
+        <env name="CHECK_BREACHED_PASSWORDS" value="false"/>
+        <env name="TURNSTILE_SITE_KEY" value=""/>
+        <env name="TURNSTILE_SECRET" value=""/>
+        <env name="SESSION_LIFETIME" value="30"/>
     </php>
 </phpunit>
