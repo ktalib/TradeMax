@@ -13,6 +13,8 @@ final class DatabaseSeeder extends Seeder
         $this->call([
             CountrySeeder::class,
             RolesAndPermissionsSeeder::class,
+            AssetSeeder::class,
+            SystemWalletSeeder::class,
         ]);
     }
 }

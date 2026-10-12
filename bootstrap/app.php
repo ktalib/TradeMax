@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         __DIR__.'/../app/Domain/Admin/Console',
+        __DIR__.'/../app/Domain/Ledger/Console',
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

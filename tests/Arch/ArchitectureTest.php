@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-use Tests\TestCase;
 
 arch('every application class declares strict types')
     ->expect('App')
@@ -21,7 +20,7 @@ arch('domain and money code never uses floats')
     ->not->toUse(['floatval', 'round', 'floor', 'ceil', 'number_format']);
 
 it('has no float types or casts in domain and money code', function (): void {
-    $roots = [app_path('Domain'), app_path('Support/Money')];
+    $roots = [dirname(__DIR__, 2).'/app/Domain', dirname(__DIR__, 2).'/app/Support/Money'];
     $offenders = [];
 
     foreach ($roots as $root) {
@@ -50,4 +49,28 @@ it('has no float types or casts in domain and money code', function (): void {
     }
 
     expect($offenders)->toBe([]);
-})->uses(TestCase::class);
+});
+
+it('changes wallet balances only inside LedgerService', function (): void {
+    $allowed = realpath(dirname(__DIR__, 2).'/app/Domain/Ledger/Services/LedgerService.php');
+    $offenders = [];
+
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__, 2).'/app', FilesystemIterator::SKIP_DOTS));
+
+    foreach ($files as $file) {
+        if (! $file instanceof SplFileInfo || $file->getExtension() !== 'php' || $file->getRealPath() === $allowed) {
+            continue;
+        }
+
+        $code = (string) file_get_contents($file->getPathname());
+
+        // ->update([... 'available' => ...]), ->increment('locked'), raw "set available = ..."
+        if (preg_match("/->update\(\s*\[[^\]]*'(available|locked)'\s*=>/s", $code) === 1
+            || preg_match("/->(increment|decrement|incrementEach|decrementEach)\(\s*\[?\s*'(available|locked)'/", $code) === 1
+            || preg_match('/set\s+(available|locked)\s*=/i', $code) === 1) {
+            $offenders[] = $file->getPathname();
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});

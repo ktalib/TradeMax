@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+/*
+| Scheduled jobs (PLAN §4). Each phase adds the entries it owns. All times are UTC.
+*/
+
+// Ledger (Phase 2)
+Schedule::command('ledger:snapshot')->dailyAt('00:01')->withoutOverlapping()->onOneServer();
+Schedule::command('ledger:reconcile')->hourly()->withoutOverlapping()->onOneServer();
+Schedule::command('ledger:invariant-check')->everyFifteenMinutes()->withoutOverlapping()->onOneServer();
