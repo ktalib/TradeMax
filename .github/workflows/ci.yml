@@ -28,6 +28,12 @@ jobs:
           extensions: bcmath, intl, mbstring, pdo_sqlite, pdo_mysql, gd, zip
           coverage: ${{ matrix.os == 'ubuntu-latest' && 'pcov' || 'none' }}
 
+      # Tests run on MySQL (ADR-0008): ledger row locks and DECIMAL(36,18) need the real engine.
+      - uses: ankane/setup-mysql@v1
+        with:
+          mysql-version: '8.0'
+          database: trademax_test
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22

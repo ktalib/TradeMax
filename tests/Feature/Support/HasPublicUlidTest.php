@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
+    // Temporary: a real CREATE TABLE commits MySQL's open test transaction.
     Schema::create('ulid_probes', function (Blueprint $table): void {
+        $table->temporary();
         $table->id();
         $table->ulid('public_id')->unique();
         $table->timestamps();

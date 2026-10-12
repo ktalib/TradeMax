@@ -21,3 +21,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Agent worktrees (Claude Code isolation)
+/.claude/worktrees/
