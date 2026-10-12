@@ -48,4 +48,17 @@
   - Ubuntu/Supervisor deployment docs removed. Hosting must be chosen before Phase 7; the host must run long-lived processes with auto-restart. Shared cPanel can't, so it would limit the platform to non-trading modules.
 - **Consequences:** Master prompt §1 (Sail, Horizon), §9.3 (Supervisor) and §14 (Makefile, Sail, Ubuntu) are superseded. Deployment docs are written once hosting is chosen.
 
+## ADR-0005 — Phase 0 build choices
+- **Status:** Accepted (2026-10-12)
+- **Context:** Phase 0 was built on the team's Windows machine (WAMP: PHP 8.2.0, MySQL 8.0.31 not running, no Redis).
+- **Decision:**
+  - **PHP 8.2** instead of the plan's 8.3. Laravel 12 supports 8.2; CI pins 8.2 so the two match. Move both to 8.3 together when WAMP is upgraded.
+  - **Packages arrive with the phase that first uses them** instead of all in Phase 0 (PLAN §3.1). Phase 0 installs Livewire, Pest, Larastan, Rector and Pint. Fortify, Sanctum, spatie/permission and activitylog arrive in Phase 1; Filament with the first admin screens; Reverb, Pulse, Sentry, backup, QR and image handling in their owning phases. Unused, unconfigured packages would only add attack surface and upgrade work.
+  - **Tests use in-memory SQLite** until Phase 2. Ledger concurrency tests need MySQL row locks, so Phase 2 switches the test database to MySQL.
+  - **Design system follows the approved UI preview**: collapsible sidebar, refined dark-first tokens, and Sora added for headings and large figures (Inter for UI text, JetBrains Mono for numbers and addresses), all self-hosted via @fontsource.
+  - **Livewire is bundled through Vite** (`livewire.esm` + `@livewireScriptConfig`) so the component library's Alpine behaviour (`resources/js/ui.js`) registers before Alpine starts.
+  - **`Model::shouldBeStrict()`** outside production, a superset of the plan's `preventLazyLoading()`.
+  - **Cache and queue default to `database`** in `.env.example` so `composer setup` works without Redis; Redis is required before Phase 7.
+- **Consequences:** PLAN §3.1's package list is satisfied incrementally. Each phase's notes list what it installs.
+
 <!-- Add new ADRs below. -->

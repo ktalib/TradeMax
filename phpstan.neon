@@ -1,0 +1,18 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 8
+    paths:
+        - app
+        - bootstrap/providers.php
+        - config
+        - database
+        - routes
+    tmpDir: storage/framework/cache/phpstan
+    ignoreErrors:
+        # The trait has no user until the Identity models land in Phase 1. reportUnmatchedIgnoredErrors
+        # (on by default) makes this entry fail once a model uses the trait, so it can't linger.
+        -
+            identifier: trait.unused
+            path: app/Support/Concerns/HasPublicUlid.php

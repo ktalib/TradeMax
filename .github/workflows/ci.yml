@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, analyse, test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is the development platform (ADR-0004); Linux gives fast feedback and coverage.
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: bcmath, intl, mbstring, pdo_sqlite, pdo_mysql, gd, zip
+          coverage: ${{ matrix.os == 'ubuntu-latest' && 'pcov' || 'none' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Composer install
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        shell: bash
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Pint
+        run: vendor/bin/pint --test
+
+      - name: Larastan
+        run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+      - name: Pest
+        if: matrix.os == 'windows-latest'
+        run: vendor/bin/pest
+
+      - name: Pest with coverage
+        if: matrix.os == 'ubuntu-latest'
+        run: vendor/bin/pest --coverage --min=85
+
+      - name: Dependency audit
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          composer audit
+          npm audit --audit-level=high

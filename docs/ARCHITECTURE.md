@@ -47,6 +47,13 @@ Each module lives in `app/Domain/<Module>/` with `{Models,Actions,Services,Repos
 - Enum state machines with explicit `canTransitionTo()` maps.
 - Cross-module communication via Events only.
 
+## Foundations (Phase 0)
+
+- **Money:** `App\Support\Money\Decimal` is an immutable bcmath value at scale 18. It rejects floats (TypeError) and non-plain numeric strings. Division truncates toward zero; `roundDown` (balances, payouts) and `roundHalfUp` are explicit. `DecimalFormatter` formats for display using only intl's separator symbols, so 18-decimal values never pass through a float.
+- **Public ids:** `HasPublicUlid` adds a ULID `public_id` and makes it the route key.
+- **UI:** tokens in `resources/css/tokens.css` (dark default, `[data-theme=light|system]`), mapped to Tailwind utilities in `app.css`. Components live in `resources/views/components/ui`, with Alpine behaviour in `resources/js/ui.js`. The layout reads its sidebar from `config/navigation.php`, and items whose route doesn't exist yet render disabled.
+- **Guards:** `tests/Arch` enforces strict types everywhere and no float types, casts or float math functions in `App\Domain` and `App\Support\Money`.
+
 ## Module sections
 
 _(One section per module added as it is built — see `new-domain-module` skill step 10.)_

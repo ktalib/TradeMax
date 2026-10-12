@@ -1,10 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "trademax/platform",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
-    "license": "MIT",
+    "description": "TradeMax custodial crypto exchange and investment platform.",
+    "keywords": [
+        "exchange",
+        "crypto",
+        "laravel"
+    ],
+    "license": "proprietary",
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
@@ -52,7 +56,38 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74,#86efac\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan schedule:work\" \"npm run dev\" --names=server,queue,schedule,vite"
+        ],
+        "setup": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@composer install --no-interaction",
+            "@php artisan key:generate --ansi",
+            "@php artisan migrate --graceful --ansi",
+            "npm install",
+            "npm run build"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "pest"
+        ],
+        "test:coverage": [
+            "@php artisan config:clear --ansi",
+            "pest --coverage --min=85"
+        ],
+        "analyse": [
+            "phpstan analyse --memory-limit=1G --no-progress"
+        ],
+        "lint": [
+            "pint --test"
+        ],
+        "format": [
+            "pint"
+        ],
+        "rectify": [
+            "rector process"
+        ],
+        "fresh": [
+            "@php artisan migrate:fresh --seed --ansi"
         ]
     },
     "extra": {
@@ -73,5 +108,15 @@
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "scripts-descriptions": {
+        "setup": "First-time install: env, dependencies, key, migrations, assets.",
+        "dev": "Run the app, queue worker, scheduler and Vite together.",
+        "test": "Run the Pest suite.",
+        "analyse": "Larastan level 8.",
+        "lint": "Check formatting with Pint (no changes).",
+        "format": "Fix formatting with Pint.",
+        "rectify": "Apply Rector refactors.",
+        "fresh": "Rebuild the database and seed it."
+    }
 }

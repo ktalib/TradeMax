@@ -1,0 +1,135 @@
+/*
+ * TradeMax design tokens. Dark-first; light theme via [data-theme="light"],
+ * or follow the OS when [data-theme="system"]. Components use these tokens only — no raw hex in Blade.
+ */
+:root {
+    color-scheme: dark;
+
+    /* Surfaces */
+    --bg: #07090e;
+    --bg-raise: #0a0d14;
+    --surface: #0e121b;
+    --surface-2: #141925;
+    --surface-3: #1b2130;
+    --border: rgba(255, 255, 255, 0.065);
+    --border-strong: rgba(255, 255, 255, 0.12);
+
+    /* Text */
+    --text: #edf0f7;
+    --text-2: #9aa4b9;
+    --text-3: #5f697f;
+    --text-inverse: #07090e;
+
+    /* Brand */
+    --brand: #5b84ff;
+    --brand-hover: #7397ff;
+    --brand-soft: rgba(91, 132, 255, 0.13);
+    --brand-glow: rgba(91, 132, 255, 0.28);
+    --accent: #00e0b8;
+    --accent-soft: rgba(0, 224, 184, 0.12);
+
+    /* Market semantics */
+    --up: #1dd188;
+    --up-soft: rgba(29, 209, 136, 0.12);
+    --down: #ff5468;
+    --down-soft: rgba(255, 84, 104, 0.12);
+
+    /* Status */
+    --warning: #f5b021;
+    --warning-soft: rgba(245, 176, 33, 0.12);
+    --info: #38bdf8;
+    --info-soft: rgba(56, 189, 248, 0.12);
+
+    /* Effects */
+    --ring: 0 0 0 3px rgba(91, 132, 255, 0.4);
+    --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px -12px rgba(0, 0, 0, 0.6);
+    --shadow-pop: 0 24px 64px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --glow: radial-gradient(1000px 420px at 12% -120px, rgba(91, 132, 255, 0.2), transparent 65%),
+        radial-gradient(700px 380px at 92% -160px, rgba(0, 224, 184, 0.1), transparent 65%);
+    --overlay: rgba(3, 5, 9, 0.7);
+
+    /* Asset identity colours (brand marks, same in both themes) */
+    --asset-btc: #f7931a;
+    --asset-eth: #7b8cff;
+    --asset-usdt: #26a17b;
+    --asset-usdc: #2775ca;
+    --asset-sol: #9945ff;
+    --asset-bnb: #e8b30b;
+    --asset-trx: #eb0029;
+
+    /* Radius */
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+}
+
+:root[data-theme='light'] {
+    color-scheme: light;
+    --bg: #f4f6fa;
+    --bg-raise: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f2f4f9;
+    --surface-3: #e8ecf4;
+    --border: rgba(14, 20, 34, 0.08);
+    --border-strong: rgba(14, 20, 34, 0.15);
+    --text: #0d1321;
+    --text-2: #4a5470;
+    --text-3: #7c869d;
+    --text-inverse: #ffffff;
+    --brand: #3461f0;
+    --brand-hover: #2650d6;
+    --brand-soft: rgba(52, 97, 240, 0.09);
+    --brand-glow: rgba(52, 97, 240, 0.18);
+    --accent: #00957b;
+    --accent-soft: rgba(0, 149, 123, 0.1);
+    --up: #0b9f65;
+    --up-soft: rgba(11, 159, 101, 0.1);
+    --down: #de2f49;
+    --down-soft: rgba(222, 47, 73, 0.09);
+    --warning: #b07300;
+    --warning-soft: rgba(245, 176, 33, 0.16);
+    --info: #0284c7;
+    --info-soft: rgba(56, 189, 248, 0.14);
+    --shadow-card: 0 1px 2px rgba(14, 20, 34, 0.04), 0 10px 30px -14px rgba(14, 20, 34, 0.14);
+    --shadow-pop: 0 24px 64px -16px rgba(14, 20, 34, 0.28), 0 0 0 1px rgba(14, 20, 34, 0.08);
+    --glow: radial-gradient(1000px 420px at 12% -120px, rgba(52, 97, 240, 0.1), transparent 65%),
+        radial-gradient(700px 380px at 92% -160px, rgba(0, 149, 123, 0.07), transparent 65%);
+    --overlay: rgba(13, 19, 33, 0.35);
+}
+
+@media (prefers-color-scheme: light) {
+    :root[data-theme='system'] {
+        color-scheme: light;
+        --bg: #f4f6fa;
+        --bg-raise: #ffffff;
+        --surface: #ffffff;
+        --surface-2: #f2f4f9;
+        --surface-3: #e8ecf4;
+        --border: rgba(14, 20, 34, 0.08);
+        --border-strong: rgba(14, 20, 34, 0.15);
+        --text: #0d1321;
+        --text-2: #4a5470;
+        --text-3: #7c869d;
+        --text-inverse: #ffffff;
+        --brand: #3461f0;
+        --brand-hover: #2650d6;
+        --brand-soft: rgba(52, 97, 240, 0.09);
+        --brand-glow: rgba(52, 97, 240, 0.18);
+        --accent: #00957b;
+        --accent-soft: rgba(0, 149, 123, 0.1);
+        --up: #0b9f65;
+        --up-soft: rgba(11, 159, 101, 0.1);
+        --down: #de2f49;
+        --down-soft: rgba(222, 47, 73, 0.09);
+        --warning: #b07300;
+        --warning-soft: rgba(245, 176, 33, 0.16);
+        --info: #0284c7;
+        --info-soft: rgba(56, 189, 248, 0.14);
+        --shadow-card: 0 1px 2px rgba(14, 20, 34, 0.04), 0 10px 30px -14px rgba(14, 20, 34, 0.14);
+        --shadow-pop: 0 24px 64px -16px rgba(14, 20, 34, 0.28), 0 0 0 1px rgba(14, 20, 34, 0.08);
+        --glow: radial-gradient(1000px 420px at 12% -120px, rgba(52, 97, 240, 0.1), transparent 65%),
+            radial-gradient(700px 380px at 92% -160px, rgba(0, 149, 123, 0.07), transparent 65%);
+        --overlay: rgba(13, 19, 33, 0.35);
+    }
+}

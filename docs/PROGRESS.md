@@ -6,7 +6,7 @@
 
 | Phase | Scope | Done when | Status |
 |---|---|---|---|
-| 0 | Repo, Windows local env (Laragon), composer scripts, CI, CLAUDE.md, skills, hooks, docs skeleton, Decimal class, tokens + Tailwind + base layout + UI component library | CI green; component gallery `/dev/ui` renders all components in dark/light at 360/1280 | In progress — rules, skills, hooks, docs done; app scaffold pending |
+| 0 | Repo, Windows local env (Laragon), composer scripts, CI, CLAUDE.md, skills, hooks, docs skeleton, Decimal class, tokens + Tailwind + base layout + UI component library | CI green; component gallery `/dev/ui` renders all components in dark/light at 360/1280 | Done (2026-10-12) — visual check at 360/1280 pending owner review |
 | 1 | Identity: auth, 2FA, devices, sessions, anti-phishing, security settings, rate limits, audit log | Pest auth suite green; security-review pass | Not started |
 | 2 | Assets, Ledger, wallets, system accounts, invariants, snapshots, reconciliation scaffolding | LedgerInvariantTest + concurrency tests green | Not started |
 | 3 | KYC tiers + provider drivers (fake + real) + admin review | User reaches T2 with fake provider; limits enforced | Not started |
@@ -38,3 +38,4 @@ Commit green phases with Conventional Commits.
 - 2026-10-12 — Spec review: corrected 10 defects/contradictions in the master prompt (ADR-0003); PLAN, AGENTS.md, skills and hooks updated. `CLAUDE.md` now imports `AGENTS.md`.
 - 2026-10-12 — Platform switched to Windows dev + Windows Server/cPanel production (ADR-0004): removed Ubuntu/Supervisor/Sail/Horizon/pcntl assumptions.
 - 2026-10-12 — Production hosting deferred (ADR-0004 amended); Windows remains the dev platform.
+- 2026-10-12 — **Phase 0 done.** Laravel 12 skeleton; `Decimal` (bcmath, scale 18) and locale-aware `DecimalFormatter` with full test suites; `HasPublicUlid`; 14 domain module trees + `DomainServiceProvider`; `config/platform|payments|kyc|sms|trading|navigation.php`; design tokens, Tailwind 4 theme, self-hosted fonts, sidebar layout, 22 UI components and the `/dev/ui` gallery; architecture tests (strict types, no floats in money/domain code); CI for Windows + Ubuntu; full `.env.example`. Checks: 67 tests passing, 96.2% line coverage (money code 100%), Larastan level 8 clean, Pint clean, `npm run build` OK. Choices recorded in ADR-0005. Not yet verified: the 360px/1280px visual check (headless browser screenshots weren't available here).
