@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "test ! -f vendor/bin/pint || vendor/bin/pint --dirty -q || true" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "test ! -f vendor/autoload.php || composer test -- --stop-on-failure" }
+        ]
+      }
+    ]
+  }
+}
