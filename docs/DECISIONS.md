@@ -59,6 +59,19 @@
   - **Livewire is bundled through Vite** (`livewire.esm` + `@livewireScriptConfig`) so the component library's Alpine behaviour (`resources/js/ui.js`) registers before Alpine starts.
   - **`Model::shouldBeStrict()`** outside production, a superset of the plan's `preventLazyLoading()`.
   - **Cache and queue default to `database`** in `.env.example` so `composer setup` works without Redis; Redis is required before Phase 7.
+  - **Local services (2026-10-12):** MySQL 8.0.31 from WAMP with databases `trademax` and `trademax_test`; Memurai on 6379. Laravel uses the **predis** client (WAMP has no `phpredis` DLL); switching later is one env change. WAMP's MySQL defaults to MyISAM, so `config/database.php` pins `engine => InnoDB` (the ledger needs transactions and row locks) and the plan's `utf8mb4_0900_ai_ci` collation.
 - **Consequences:** PLAN §3.1's package list is satisfied incrementally. Each phase's notes list what it installs.
+
+## ADR-0006 — In-house Signals (Phase 9b)
+- **Status:** Accepted (2026-10-12)
+- **Context:** The owner wants a Signals feature like the approved UI preview. There are no outside signal providers yet.
+- **Decision:**
+  - Two in-house sources: **staff analysts** (publish from admin, author ≠ reviewer) and an **automatic indicator engine** (EMA cross, RSI reversal, MACD cross on platform candles, ATR-based levels).
+  - Built as **Phase 9b**, after Trading, Staking and Copy Trading, because outcomes are tracked against live prices and candles.
+  - **Signals are immutable once published**, and track records count every closed signal including losses; cancelled and expired-without-entry are shown separately, never dropped.
+  - **No auto-trading.** "Trade this" only pre-fills the order form.
+  - **Off by default** (`signals.enabled=false`) until legal sign-off, with per-country gating, because publishing buy/sell signals can count as investment advice.
+  - **Demo data is generated, not typed.** `DemoSignalSeeder` (APP_DEMO only) simulates ~90 days of candles and runs the real indicator and outcome engines over them, so demo track records come from the same code as production.
+- **Consequences:** a new `app/Domain/Signals` module, six tables, four scheduled commands and a `signals` queue. PLAN gains a Phase 9b section and a risk-register entry.
 
 <!-- Add new ADRs below. -->

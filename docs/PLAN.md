@@ -23,7 +23,7 @@ Phase 0  Foundation + Design System
              ├─ Phase 4  Deposits (Rail A/B)
              ├─ Phase 5  Withdrawals
              │    └─ Phase 6  Notifications
-             ├─ Phase 7  Trading  ──► Phase 8 Staking ──► Phase 9 Copy Trading
+             ├─ Phase 7  Trading  ──► Phase 8 Staking ──► Phase 9 Copy Trading ──► Phase 9b Signals
              └─ Phase 10 Compliance / Admin / Support / Referrals
                   └─ Phase 11 i18n & extras
                        └─ Phase 12 API / E2E / Hardening / Deploy
@@ -41,7 +41,7 @@ Phase 0  Foundation + Design System
 |---|---|---|
 | Money math | `App\Support\Money\Decimal` | bcmath wrapper, scale 18; no float/double anywhere in `App\Domain` |
 | Public IDs | `App\Support\Concerns\HasPublicUlid` | ULID `public_id` for anything exposed in URLs/APIs |
-| Domain skeleton | `app/Domain/<Module>/{...}` | All 14 modules created as directories with the standard subtrees |
+| Domain skeleton | `app/Domain/<Module>/{...}` | All 14 modules created as directories with the standard subtrees (Signals is added in Phase 9b) |
 | Container wiring | `app/Providers/DomainServiceProvider` | Binds repository `Contracts/` interfaces to Eloquent implementations |
 | Config surface | `config/platform.php`, `payments.php`, `kyc.php`, `sms.php`, `trading.php` | Defaults live here; admin-editable values in `settings`, cached with tag invalidation |
 | State machines | backed Enums + `canTransitionTo()` | One per status column; illegal transitions throw |
@@ -75,6 +75,7 @@ Providers (all behind driver + Fake): payments, chain verifier, payout, SMS, KYC
 | `notifications` | dedicated — all outbound channels | Phase 6 |
 | `trading` | dedicated — order settle, stop triggers | Phase 7 |
 | `copy` | dedicated, high priority — mirror orders, settlements | Phase 9 |
+| `signals` | — outcome evaluation, indicator generation, stats | Phase 9b |
 | `kyc` | — provider sync, rescreen | Phase 3 |
 | `reports` | — statements, CSV/XLSX, finance email | Phase 10/11 |
 | `default` | — everything else | Phase 0 |
@@ -292,6 +293,43 @@ Every real driver ships with recorded fixtures under `tests/Fixtures/<provider>/
 
 ---
 
+## Phase 9b — Signals (ADR-0006)
+
+**Goal:** in-house trade signals from two sources — staff analysts publishing from the admin panel, and an automatic indicator engine running on platform candles — with outcomes tracked automatically against live prices and track records that count every result, losses included. No outside providers in v1.
+
+**Why it sits here:** signals need live markets, prices and candles (Phase 7) to track entries, targets and stops, and they reuse the notification matrix (Phase 6) and admin maker-checker (Phase 10 builds the general version; this phase uses a signal-specific review step).
+
+**Deliverables**
+- Module `app/Domain/Signals/` (new; scaffolded with the `new-domain-module` skill). Talks to Trading only through its public contracts: market lookup, last price, closed candles.
+- Tables:
+  - `signal_providers`: id, public_id, type (analyst|indicator), user_id (nullable; the staff analyst), display_name, bio, strategy_key (indicator only, e.g. `ema_cross_20_50`, `rsi_reversal_14`, `macd_cross`), timeframes (json), status (active|paused|retired), timestamps.
+  - `signals`: id, public_id, provider_id, market_id, side (buy|sell), timeframe (1h|4h|1d), entry_low, entry_high, stop_loss, confidence (1–5), rationale (text, required), status, outcome (null|target_1|target_2|target_3|stopped|expired_no_entry|cancelled), result_pct DECIMAL(10,6), price_at_publish, entered_at, closed_at, expires_at, created_by, reviewed_by, published_at, cancel_reason, source_candle_open_time (indicator only), timestamps. UNIQUE(provider_id, market_id, timeframe, source_candle_open_time) so the indicator engine is idempotent. Index (status, market_id), (provider_id, closed_at).
+  - `signal_targets`: signal_id, sequence (1–3), price, hit_at; UNIQUE(signal_id, sequence).
+  - `signal_events`: append-only log of every state change and target/stop hit (signal_id, type, price, payload json, created_at).
+  - `signal_provider_stats_daily`: provider_id, date, signals_closed, entered, targets_hit, stopped, expired_no_entry, hit_rate DECIMAL(10,6), avg_result_pct, median_result_pct, best/worst_result_pct; UNIQUE(provider_id, date).
+  - `signal_follows`: user_id, provider_id, channels (json); UNIQUE(user_id, provider_id).
+- **State machine** (`SignalStatus`): draft → pending_review → published → active (entry zone touched) → closed; published|active → cancelled (with reason, staff only). Illegal transitions throw.
+- **Publishing rules** (`PublishSignalAction`), enforced in code and tests:
+  - Level ordering — buy: stop < entry_low ≤ entry_high < T1 < T2 < T3; sell: mirrored. Spot only: "sell" means reduce holdings, never short.
+  - Entry zone within `signals.max_entry_distance_pct` of the last price at publish; levels respect the market tick size.
+  - Rationale required; confidence 1–5; expiry required (default per timeframe: 1h → 24h, 4h → 3d, 1d → 10d).
+  - **Immutable once published.** Levels, targets and rationale can't be edited; staff can only cancel with a reason. Cancelling an active signal still counts it in the track record at its current result, so nobody can hide a loser.
+  - Analyst signals go through review: author ≠ reviewer (maker-checker), same as other sensitive admin actions.
+- **Outcome engine** (`signals:evaluate`, every minute, plus on each closed 1m candle): walks candle high/low since the last check — entry touched → `active`; then targets in order and the stop. If a stop and a target fall inside the same candle, the stop wins (conservative; documented on the methodology page). Unentered signals past `expires_at` close as `expired_no_entry`. `result_pct` is measured from the entry-zone midpoint to the exit level, before fees.
+- **Indicator engine** (`signals:generate`, after each candle close for configured timeframes): EMA 20/50 cross, RSI(14) reversal from <30 / >70, MACD(12,26,9) signal-line cross, each filtered by volume and trend. All indicator maths in `Decimal`. Levels from ATR(14): stop 1.5 ATR beyond entry, targets at 1R / 2R / 3R. Auto-published (no review), labelled "Automatic" everywhere, and rate-limited per market.
+- **Track records** (`signals:compute-stats`, nightly + on close): per provider, from closed signals only — hit rate = signals reaching T1 or better ÷ signals that entered; expired-without-entry and cancelled shown separately, never dropped. A public methodology page explains every formula.
+- **User features:** Signals page (filters, cards with entry/stop/targets and a live price ladder, "Why this signal", confidence, provider record), closed-signal history, provider profiles, follow a provider, "Alert me at entry" (uses price alerts), and "Trade this" which **pre-fills** the order form — the user always sets the amount and confirms. No auto-trading from signals.
+- **Admin (Filament):** providers, signal composer with live level validation, review queue, outcomes, stats, and pause/retire for indicator strategies.
+- **Notifications** (matrix rows added): new signal from a followed provider (O), target/stop hit on a followed signal (O). Never SMS.
+- **Compliance:** feature flag `signals.enabled` (default **false** until legal sign-off, because publishing signals can count as investment advice) and per-country gating via `countries.features_disabled` (`"signals"`). Disclaimer on every signal surface; `MoneyLanguageTest` extends to signal copy ("guaranteed", "risk-free", "sure win" are forbidden).
+- **Demo data** (`DemoSignalSeeder`, runs only when `APP_DEMO=true`): seeds three analyst personas and the three indicator strategies, generates ~90 days of simulated candles per market (random walk with drift and volatility regimes), runs the **real** indicator engine and **real** outcome engine over them, and has the analyst personas publish through `PublishSignalAction`. So every demo outcome and track record is produced by the same code as production, wins and losses included, and nothing is hand-typed.
+
+**Jobs/queues:** `signals` queue (default priority); scheduler: `signals:evaluate` (every minute), `signals:generate` (on candle close / every 5 min fallback), `signals:compute-stats` (daily 00:40 UTC), `signals:expire` (every 5 min).
+
+**Acceptance / exit gate:** level-ordering and immutability tests; state-machine tests; outcome engine fixture tests (entry then T1/T2/T3, stop, same-candle stop+target → stopped, expiry without entry); stats recomputed from scratch equal the stored stats; indicator engine deterministic on fixture candles; demo seeder refuses to run when `APP_DEMO=false`; flag off or country-disabled → routes 404 and nav item hidden.
+
+---
+
 ## Phase 10 — Referrals, Support, Admin, Compliance
 
 **Goal:** the remaining business modules plus the compliance plumbing (geo-restriction, AML, Travel Rule, consents, audit).
@@ -397,5 +435,6 @@ Every real driver ships with recorded fixtures under `tests/Fixtures/<provider>/
 | Staking / copy trading treated as securities or investment management | Feature must be removed or licensed separately | Feature flags per country (`countries.features_disabled`); jurisdiction decided before Phase 3 |
 | Market-maker mode = platform trading against users | Conflict of interest, disclosure duty | Off by default; MM account and its PnL visible in admin; disclosed in Terms when enabled |
 | Binance public API blocked in some regions (HTTP 451, incl. US) | No price feed | CoinGecko fallback tested in CI with a forced-451 fake; feed source shown in admin health |
+| Signals treated as investment advice | Feature needs a licence or must stay off in some countries | `signals.enabled` defaults to false; per-country gating; no auto-trading; full track records incl. losses (ADR-0006) |
 | Hosting undecided | Some hosts (e.g. shared cPanel) can't run long-lived processes, websockets or Redis | Decide before Phase 7; heartbeat alerts on every long-running process (ADR-0004) |
 | Unreviewed autonomous build | Money bugs ship unnoticed | Human review gates after Phase 2 (ledger) and Phase 7 (engine) |

@@ -4,13 +4,22 @@
 
 ## Prerequisites (Windows)
 
-- Laragon (or Laravel Herd for Windows) with PHP 8.3+ (`bcmath`, `intl`, `gd`, `redis`, `pdo_mysql` enabled), MySQL 8, Composer 2
+- WAMP (current dev setup) or Laragon/Herd: PHP 8.2+ with `bcmath`, `intl`, `gd`, `pdo_mysql`; MySQL 8; Composer 2
 - Node 20+
-- Redis 7 compatible server: Memurai (native Windows) or Redis via Laragon
+- Memurai (Redis for Windows) on port 6379. Laravel talks to it through the `predis` package, so no PHP extension is needed.
 - Mailpit (Windows binary) for local mail
 - Upload virus scanning uses Windows Defender locally (`VIRUS_SCAN_DRIVER=defender`)
 
 No Docker, Sail, Horizon or `pcntl` (ADR-0004).
+
+### Databases
+
+Create two databases (utf8mb4_0900_ai_ci): `trademax` for the app and `trademax_test` for MySQL-backed tests (from Phase 2). The app forces InnoDB tables, because WAMP's MySQL defaults to MyISAM.
+
+```sql
+CREATE DATABASE trademax CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE trademax_test CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+```
 
 ## Quick start (PowerShell)
 

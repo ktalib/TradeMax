@@ -14,6 +14,7 @@ return [
             ['label' => 'Overview', 'route' => 'dashboard', 'icon' => 'home'],
             ['label' => 'Markets', 'route' => 'markets.index', 'icon' => 'markets'],
             ['label' => 'Spot trading', 'route' => 'trade.show', 'icon' => 'trade'],
+            ['label' => 'Signals', 'route' => 'signals.index', 'icon' => 'signals'],
         ],
     ],
     [
