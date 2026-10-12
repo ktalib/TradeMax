@@ -36,6 +36,8 @@ composer dev     # serve + queue workers + reverb + vite + schedule:work
 - **Queued notifications** (security alerts) need a worker: `composer dev` runs one.
 - **CAPTCHA** is off until `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET` are set.
 - **Staff account:** `php artisan admin:create you@example.com --name="Your Name"`.
+- **Tests use MySQL** (`trademax_test`, root, no password; see `phpunit.xml`). `composer test` runs everything, including `tests/Concurrency`, which starts 10 parallel PHP processes per test.
+- **Ledger commands:** `php artisan ledger:invariant-check`, `ledger:reconcile`, `ledger:snapshot --date=YYYY-MM-DD`, `ledger:proof-of-liabilities BTC --date=YYYY-MM-DD`.
 
 ## External providers
 

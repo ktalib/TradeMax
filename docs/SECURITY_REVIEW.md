@@ -36,3 +36,18 @@ _(append per phase)_
 | Extra | Timing-equalised login for unknown emails; generic "credentials" error; codes never in SMS links; SMS ≤ 160 chars; emails carry the anti-phishing code and a freeze link; one-time secrets never enter Livewire's payload; audit log is append-only. |
 
 **Open items:** passkeys are off until their UI ships; the admin panel (and admin 2FA enforcement) arrives with Filament; the DB-level UPDATE/DELETE revoke on `audit_logs` must be applied at deployment (RUNBOOK).
+
+### Phase 2 — Assets & Ledger (2026-10-12)
+
+| Check | Result |
+|---|---|
+| Ledger invariants | `LedgerInvariants` checks per-journal and per-asset balance, the sign convention, wallet-vs-entries drift and entry/wallet asset agreement. It runs after every money test and every 15 minutes in production. An architecture test fails the build if anything outside `LedgerService` writes `available`/`locked`. |
+| Concurrency | Parallel PHP processes on MySQL: 10 simultaneous 0.3 BTC withdrawals from 1 BTC give exactly 3 successes; 10 simultaneous replays of one key give 1 journal; 10 simultaneous deposits through `system_hot`/`system_fee` lose no update; crossing transfers don't deadlock. |
+| Idempotency | UNIQUE `journals.idempotency_key`, plus a fingerprint so a reused key with different entries fails. UNIQUE `reverses_journal_id` (one reversal per journal). |
+| Precision | DECIMAL(36,18) everywhere; atomic updates CAST parameters to DECIMAL (MySQL would otherwise use doubles); entries beyond asset precision are rejected. Tests use MySQL, not SQLite. |
+| Immutability | `Journal`, `JournalEntry`, `CustodyBalance` refuse update/delete; `Wallet` refuses balance edits and deletes. DB grants listed in RUNBOOK. |
+| Mass assignment | Balance columns are not fillable; `JournalEntry`/snapshot rows are written only by `LedgerService`/`LedgerTotals`. |
+| Authorization / IDOR | No user-facing endpoints in this phase. Journals, reports and proofs carry ULID `public_id`s for later admin/user URLs. |
+| Dependencies | No new packages. |
+
+**Open items:** the ledger explorer UI comes with the admin panel; DB grants must be applied at deployment; the human ledger review (PLAN gate) is pending.

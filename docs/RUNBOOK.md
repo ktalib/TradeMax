@@ -14,7 +14,8 @@ See master build prompt Section 9 for the full schedule table and queue names. A
 
 ## Incident playbooks (placeholders — fill as built)
 
-- **Ledger mismatch** — `ledger:reconcile` auto-halts withdrawals for the asset on mismatch > tolerance. Steps: freeze, inspect journals, post reversal, resume.
+- **Ledger mismatch** — `ledger:reconcile` (hourly) compares the newest custody figure per asset with -(system_hot + system_cold) at that figure's time. Beyond the asset's `reconcile_tolerance` it halts that asset's withdrawals, logs a critical alert and writes a `mismatch` report. Steps: re-count custody and record it again (a stale or mistyped figure is the usual cause), then inspect the journals since the last `matched` report. Correct a wrong journal with a reversal (`ReverseJournal`), never a direct edit. Resume withdrawals as staff (`ResumeAssetWithdrawals`, audited) once a run reports `matched`.
+- **Ledger invariant violation** — `ledger:invariant-check` (every 15 min) exits non-zero and logs critical. `balance_drift` means something wrote a balance outside `LedgerService`; treat it as an incident: halt withdrawals of the asset, find the write (audit log, DB logs), and correct with journals. Never "fix" the wallet row by hand.
 - **Staking yield pool insufficient** — accrual stops, product `paused`, critical admin alert. Steps: fund pool (maker-checker), resume product, re-run `staking:accrue`.
 - **Trading engine stale heartbeat** — drain/restart engine; orders remain in Redis stream; verify no crossed book.
 - **Webhook failure spike** — check `payment_webhooks.error`, confirm provider, use `deposits:poll-pending` to recover.
@@ -41,3 +42,12 @@ Create staff with `php artisan admin:create someone@company.com --name="Full Nam
 ## Account freezes
 
 Users freeze their own account from the security page or the link in any security email. That revokes API keys, ends other sessions and stops withdrawals. Unfreezing is a staff action after an identity check (admin panel, Phase 10).
+
+## Ledger
+
+- **Balances change only through `LedgerService::post()`.** No SQL edits to `wallets`, `journals` or `journal_entries`, ever. Corrections are reversal journals.
+- **Custody figures:** finance records what custody holds per asset (`RecordCustodyBalance`, admin panel). Record one for every asset before go-live; until then `ledger:reconcile` reports the asset as `missing`.
+- **Snapshots:** `ledger:snapshot` closes the previous UTC day at 00:01. To backfill a missed day: `php artisan ledger:snapshot --date=2026-10-10` (safe to re-run).
+- **Proof of liabilities:** `php artisan ledger:proof-of-liabilities BTC --date=2026-10-10` builds the tree from that day's snapshots. Publishing the root is a separate staff action (Phase 10).
+- **System wallets:** every asset has `system_fee`, `system_yield_pool`, `system_hot`, `system_cold`, `system_suspense` (plus `system_demo_faucet` in demo). `db:seed --class=SystemWalletSeeder` creates any that are missing. `system_hot`/`system_cold` are negative by design: their absolute value is what custody should hold.
+- **Database grants:** like `audit_logs`, the app user should lose DELETE on `journals`, `journal_entries`, `wallets`, `wallet_balance_snapshots`, `custody_balances`, and UPDATE on all of them except `wallets`.

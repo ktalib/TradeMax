@@ -92,4 +92,21 @@
   12. **Turnstile is disabled when no keys are set** (local); production must set both keys. Login shows the CAPTCHA after 3 failures from an IP in 15 minutes.
 - **Consequences:** PLAN's Phase 1 "Livewire auth screens" are Blade + Fortify; `countries` moves from Phase 3 to Phase 1 (Phase 3 adds the KYC columns).
 
+## ADR-0008 — Phase 2 ledger implementation choices
+- **Status:** Accepted (2026-10-12)
+- **Context:** Building the ledger turned several ADR-0003 rules into concrete mechanics, and exposed a few gaps.
+- **Decision:**
+  1. **Tests run on MySQL** (`trademax_test`), locally and in CI (`ankane/setup-mysql` on both runners). SQLite stores DECIMAL as floating point and has no row locks, so it can't prove the ledger. Tests that need a table use a temporary one: `CREATE TABLE` would commit MySQL's per-test transaction.
+  2. **"Hot rows without a row lock" means no lock held for the whole transaction.** An InnoDB `UPDATE` always takes a row lock until commit, so `LedgerService` never reads `system_hot` or a credited `system_fee` with `FOR UPDATE`. It updates them last, with `available = available + CAST(? AS DECIMAL(36,18))`, after the user-wallet locks; the lock is held only for the tail of the transaction. The CAST matters: MySQL adds a bare string parameter as a double. All other wallets, and `system_fee` when it is debited, are locked in ascending id order and checked before writing. Deadlocks that still occur (for example a fee payout to a user who is trading at that moment) are retried up to 3 times.
+  3. **Idempotency:** the journal row is inserted straight after the locks and before the balance checks, so a concurrent replay fails on the unique key and gets the original journal back, rather than failing on funds the first post already spent. Each journal stores a fingerprint (sha256 of reference + entries); reusing a key with different entries throws `IdempotencyConflict` instead of silently returning the old journal.
+  4. **Amounts must fit the asset's precision.** An entry with more decimals than `assets.precision` is rejected, not rounded: callers round down before posting.
+  5. **System wallets are unique per asset and type** through a generated `owner_key = coalesce(user_id, 0)` column, because a UNIQUE index treats NULL user ids as distinct.
+  6. **Snapshots are exact end-of-day balances:** balance now minus everything posted after midnight UTC, so the 00:01 run doesn't pick up the first minute of the new day. Re-running is a no-op (UNIQUE(wallet_id, snapshot_date)).
+  7. **Reconciliation compares like with like.** The ledger's custody figure, -(system_hot + system_cold), is computed at the custody figure's own `as_of` time, so deposits after a count don't look like a gap. Until a price feed exists, the tolerance is per asset in asset units (`assets.reconcile_tolerance`, seeded at about 1 USD). An asset with no custody figure is reported `missing` and isn't halted. A mismatch halts that asset's withdrawals through the Assets module's `HaltAssetWithdrawals`; resuming is a staff action (`ResumeAssetWithdrawals`), always audited.
+  8. **Proof of liabilities is a Merkle sum tree** built from the day's snapshots: one leaf per user (all user wallet types, available + locked), a random nonce per leaf, the proof id inside every leaf hash, and zero-sum padding (duplicating a node would double-count). Verifiers reject negative sums. Publishing the root is a staff action in Phase 10.
+  9. **Invariant checks scan whole tables.** `--since` only limits the per-journal check. That's fine at launch volumes; it gets incremental checkpoints when the ledger grows.
+  10. **Concurrency tests** live in `tests/Concurrency` with `DatabaseTruncation` (workers can't see uncommitted fixtures). `ParallelRunner` releases the workers together through a ready/go file barrier, and the double-spend test asserts the workers really overlapped.
+  11. **The admin panel (Filament) is built in a parallel work stream.** The ledger explorer, system wallets and reconciliation pages are added to that panel once it merges.
+- **Consequences:** `platform.ledger.reconcile_tolerance_usd` stays reserved for when prices exist. CI needs MySQL on both runners. Any change to `LedgerService` goes through the same human review as Phase 2 (PLAN).
+
 <!-- Add new ADRs below. -->

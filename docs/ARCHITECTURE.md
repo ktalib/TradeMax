@@ -56,6 +56,16 @@ Each module lives in `app/Domain/<Module>/` with `{Models,Actions,Services,Repos
 
 ## Module sections
 
+### Assets & Ledger (Phase 2)
+
+- **Assets** (`app/Domain/Assets`): `assets`, `networks`, `asset_networks`. Other modules read them through `AssetCatalog` (returns `AssetData`). `HaltAssetWithdrawals` / `ResumeAssetWithdrawals` control the per-asset withdrawal halt.
+- **Wallets** are created on first use through the `Wallets` contract (`forUser`, `system`), which returns `WalletRef` handles. Other modules never load the `Wallet` model.
+- **Posting:** build a `JournalDTO` (reference, idempotency key, ≥ 2 `EntryDTO`s, `PostedBy`) and call `LedgerService::post()`. It returns `PostedJournal` (`replayed` is true for a known key). Failures: `InsufficientBalance` (nothing written), `IdempotencyConflict`, `InvalidJournal` (caller bug). `JournalPosted` fires after commit.
+- **Locking (ADR-0003/0008):** user wallets and checked system wallets are locked in ascending id order; `system_hot` and credited `system_fee` are updated atomically at the end of the transaction.
+- **Read side:** `LedgerTotals` (DB aggregates) backs `LedgerInvariants`, snapshots, reconciliation and proof of liabilities. Sums are done by MySQL in DECIMAL.
+- **Jobs:** `ledger:snapshot` (daily 00:01), `ledger:reconcile` (hourly), `ledger:invariant-check` (15 min), scheduled in `routes/console.php`.
+- **Tests:** `Tests\Support\LedgerAssertions::assertBalanced()` after money tests; `tests/Concurrency` for parallel-process races.
+
 ### Identity (Phase 1)
 
 - **Flow:** register (country gate → E.164 phone → strength + breach-checked password → consents) → email link → new-device code (if needed) → SMS code → authenticator app → app. The `app` middleware group enforces it: `auth, verified, device.verified, phone.verified, two-factor.confirmed, account.active`.
